@@ -1,6 +1,6 @@
 import os
 import pandas as pd
-from typing import Dict
+from typing import Dict, Tuple
 from tqdm import tqdm
 
 class DataLoader:
@@ -30,3 +30,18 @@ class DataLoader:
 
     def values(self):
         return self._dataframes.values()
+
+    def split_by_gender(self) -> Tuple[Dict[str, pd.DataFrame], Dict[str, pd.DataFrame], Dict[str, pd.DataFrame]]:
+        mens = {}
+        womens = {}
+        general = {}
+
+        for name, df in self._dataframes.items():
+            if name.startswith("M") and len(name) > 1 and name[1].isupper():
+                mens[name[1:]] = df  # Strip the "M"
+            elif name.startswith("W") and len(name) > 1 and name[1].isupper():
+                womens[name[1:]] = df  # Strip the "W"
+            else:
+                general[name] = df
+
+        return mens, womens, general
