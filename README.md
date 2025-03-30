@@ -22,9 +22,3 @@ So you can simply run:
 ```bash
 python data-setup.py
 ```
-
-If you want to specify a different zip use this format:
-```bash
-python data-setup.py <zip file path>
-```
----
