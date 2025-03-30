@@ -1,0 +1,16 @@
+name: marchmadness
+channels:
+  - defaults
+dependencies:
+  - python=3.10
+  - matplotlib
+  - pandas
+  - numpy
+  - tqdm
+  - scikit-learn
+  - pillow
+  - seaborn
+  - ipykernel
+  - pip
+
+

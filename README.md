@@ -1,5 +1,20 @@
 # CS-4100_MarchMadnessPredictor
 ---
+## 🛠️ Environment Setup
+
+To get started, create the conda environment using the provided `environment.yml` file. This will install all necessary dependencies for the project.
+
+### Step 1: Create the Environment
+```bash
+conda env create -f environment.yml
+```
+- ⏳ *Note: This may take a few minutes to complete.*
+
+### Step 2: Activate the Environment
+```bash
+conda activate marchmadness
+```
+---
 ## 📂 Data Setup
 
 To set up the dataset for this project:
