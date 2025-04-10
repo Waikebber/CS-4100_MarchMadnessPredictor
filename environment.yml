@@ -1,6 +1,7 @@
 name: marchmadness
 channels:
   - defaults
+  - conda-forge
 dependencies:
   - python=3.10
   - matplotlib
@@ -11,6 +12,14 @@ dependencies:
   - pillow
   - seaborn
   - ipykernel
+  - xgboost
+  - tensorflow
+  - jupyter
+  - notebook
   - pip
+  - pip:
+    - shap
+    - kaggle
+    - yellowbrick
 
 
