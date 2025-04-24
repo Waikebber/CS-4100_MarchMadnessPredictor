@@ -186,10 +186,28 @@ class FeatureEngineer:
         team_stats = pd.merge(team_stats, game_counts, on='TeamID')
         
         # Add team strength metrics if available
-        if 'MasseyOrdinals' in data:
+        if season == 2025:
+            try:
+                # Load 2025 tournament seeds
+                seeds_2025 = pd.read_csv('data/MNCAATourneySeeds_2025.csv')
+                # Remove any duplicate entries
+                seeds_2025 = seeds_2025.drop_duplicates(subset=['Season', 'TeamID', 'Region'])
+                # Convert seed to numeric value
+                seeds_2025['Seed'] = pd.to_numeric(seeds_2025['Seed'], errors='coerce').fillna(0).astype(int)
+                # Create a mapping of TeamID to Seed
+                seed_dict = dict(zip(seeds_2025['TeamID'], seeds_2025['Seed']))
+                # Add seed values to team stats
+                team_stats['Seed'] = pd.Series(seed_dict)
+                # For 2025, use seed as a proxy for ranking
+                team_stats['AvgRank'] = team_stats['Seed']
+            except FileNotFoundError:
+                print("Warning: 2025 tournament seeds file not found")
+                # Add default values
+                team_stats['Seed'] = 16  # Default to worst seed
+                team_stats['AvgRank'] = 64  # Default to a low rank
+        elif 'MasseyOrdinals' in data:
             ordinals = data['MasseyOrdinals']
             # Filter to end of regular season rankings
-            # This assumes there's a way to determine the end of the regular season
             end_season_ordinals = ordinals[(ordinals['Season'] == season) & 
                                            (ordinals['RankingDayNum'] <= 133)].copy()
             
@@ -197,18 +215,20 @@ class FeatureEngineer:
                 # Average the rankings across different systems
                 avg_ranks = end_season_ordinals.groupby('TeamID')['OrdinalRank'].mean().to_frame('AvgRank')
                 team_stats = pd.merge(team_stats, avg_ranks, on='TeamID', how='left')
+                # Add seed values based on ranking
+                team_stats['Seed'] = team_stats['AvgRank'].clip(lower=1, upper=16)
+            else:
+                # Add default values if no rankings available
+                team_stats['AvgRank'] = 64  # Default to a low rank
+                team_stats['Seed'] = 16  # Default to worst seed
+        else:
+            # Add default values if no rankings available
+            team_stats['AvgRank'] = 64  # Default to a low rank
+            team_stats['Seed'] = 16  # Default to worst seed
         
-        # Add team seed as a feature if it's tournament time
-        tournament_seeds = data['NCAATourneySeeds']
-        season_seeds = tournament_seeds[tournament_seeds['Season'] == season].copy()
-        
-        if not season_seeds.empty:
-            # Extract numeric seed from the seed string (e.g., W01 -> 1)
-            season_seeds['SeedValue'] = season_seeds['Seed'].str[1:3].astype(int)
-            seed_dict = dict(zip(season_seeds['TeamID'], season_seeds['SeedValue']))
-            
-            # Add seed values to team stats
-            team_stats['Seed'] = team_stats.index.map(seed_dict).fillna(20)  # Default high seed for teams not in tournament
+        # Fill any missing values
+        team_stats['AvgRank'] = team_stats['AvgRank'].fillna(64)
+        team_stats['Seed'] = team_stats['Seed'].fillna(16)
         
         # Make sure the index has a name
         team_stats.index.name = 'TeamID'
@@ -217,57 +237,51 @@ class FeatureEngineer:
     
     def generate_tournament_features(self, gender: str, season: int, stage: int = 2) -> pd.DataFrame:
         """
-        Generate features for tournament predictions.
+        Generate features for tournament matchups.
         
         Args:
             gender: 'M' for men's data, 'W' for women's data
-            season: Season year to generate features for
-            stage: 1 for all possible matchups, 2 for specific bracket matchups
+            season: Season to generate features for
+            stage: Tournament stage (1 or 2)
             
         Returns:
-            DataFrame with features for each potential tournament matchup
+            DataFrame with features for each possible tournament matchup
         """
+        data = self.mens_data if gender == 'M' else self.womens_data
+        
         # Get team stats for the season
         team_stats = self._get_team_season_stats(gender, season)
         
-        # If it's a future season, we'll need to create potential matchups
-        data = self.mens_data if gender == 'M' else self.womens_data
-        
-        # Create features for each potential matchup depending on the stage
-        if stage == 1:
-            # For Stage 1, we create features for all possible matchups of tournament teams
-            seeds = data['NCAATourneySeeds']
-            season_seeds = seeds[seeds['Season'] == season].copy()
-            
-            # Get all tournament teams
-            teams = sorted(season_seeds['TeamID'].unique())
-            
-            # Generate all possible matchups
-            matchups = []
-            for i, team1 in enumerate(teams):
-                for team2 in teams[i+1:]:
-                    matchups.append({
-                        'Season': season,
-                        'Team1ID': team1,
-                        'Team2ID': team2
-                    })
-            
-            matchups_df = pd.DataFrame(matchups)
-            
+        # For 2025 season, use the custom seeds file
+        if season == 2025:
+            try:
+                season_seeds = pd.read_csv('data/MNCAATourneySeeds_2025.csv')
+                # Remove any duplicate entries
+                season_seeds = season_seeds.drop_duplicates(subset=['Season', 'TeamID', 'Region'])
+            except FileNotFoundError:
+                raise ValueError("2025 tournament seeds file not found")
         else:
-            # For Stage 2, we use the tournament slots to determine potential matchups
+            # Get tournament structure data
             slots = data['NCAATourneySlots']
             season_slots = slots[slots['Season'] == season].copy()
             seeds = data['NCAATourneySeeds']
             season_seeds = seeds[seeds['Season'] == season].copy()
+        
+        if season_seeds.empty:
+            raise ValueError(f"No tournament seeds found for {season} season")
             
-            # TODO: Generate matchups based on bracket structure
-            # This is a placeholder for the actual tournament matchup generation
-            matchups_df = pd.DataFrame({
-                'Season': [season],
-                'Team1ID': [season_seeds['TeamID'].iloc[0]],
-                'Team2ID': [season_seeds['TeamID'].iloc[1]]
-            })
+        # Create all possible matchups between teams
+        team_ids = season_seeds['TeamID'].tolist()
+        matchups = []
+        for i in range(len(team_ids)):
+            for j in range(i + 1, len(team_ids)):
+                matchups.append({
+                    'Season': season,
+                    'Team1ID': team_ids[i],
+                    'Team2ID': team_ids[j]
+                })
+        
+        matchups_df = pd.DataFrame(matchups)
         
         # Create matchup features
         matchup_features = self._create_matchup_features(matchups_df, team_stats)
@@ -309,22 +323,64 @@ class FeatureEngineer:
         result = pd.merge(result, team2_stats, on='Team2ID', how='left')
         
         # Create comparative features (differences and ratios)
-        for col in team_stats.columns:
-            # Only create comparative features for numeric columns
-            if pd.api.types.is_numeric_dtype(team_stats[col]):
-                result[f'Diff_{col}'] = result[f'Team1_{col}'] - result[f'Team2_{col}']
-                
-                # For ratio features, avoid division by zero
-                # We'll only do this for strictly positive values
-                if (team_stats[col] > 0).all():
-                    result[f'Ratio_{col}'] = result[f'Team1_{col}'] / result[f'Team2_{col}']
+        numeric_cols = [col for col in team_stats.columns if pd.api.types.is_numeric_dtype(team_stats[col])]
         
-        # Calculate seed difference
-        if 'Team1_Seed' in result.columns and 'Team2_Seed' in result.columns:
-            result['SeedDiff'] = result['Team1_Seed'] - result['Team2_Seed']
-            result['HigherSeed'] = (result['Team1_Seed'] < result['Team2_Seed']).astype(int)
+        # Create differences and ratios for all numeric columns
+        for col in numeric_cols:
+            # Create difference
+            result[f'Diff_{col}'] = result[f'Team1_{col}'] - result[f'Team2_{col}']
+            
+            # Create ratio for strictly positive values
+            if (team_stats[col] > 0).all():
+                result[f'Ratio_{col}'] = result[f'Team1_{col}'] / result[f'Team2_{col}']
         
-        return result
+        # Calculate seed difference and higher seed indicator
+        result['SeedDiff'] = result['Team1_Seed'] - result['Team2_Seed']
+        result['HigherSeed'] = (result['Team1_Seed'] < result['Team2_Seed']).astype(int)
+        
+        # Define the expected feature order
+        expected_features = [
+            'Team1_WinPercentage', 'Team1_PointsPerGame', 'Team1_OpponentPointsPerGame', 'Team1_PointsDifferential',
+            'Team1_PointsRatio', 'Team1_TeamFGPercentage', 'Team1_Team3PPercentage', 'Team1_TeamFTPercentage',
+            'Team1_TeamOR', 'Team1_TeamDR', 'Team1_TeamTO', 'Team1_TeamAst', 'Team1_TeamStl', 'Team1_TeamBlk',
+            'Team1_TeamPF', 'Team1_TeamOffensiveReboundPercentage', 'Team1_TeamDefensiveReboundPercentage',
+            'Team1_TeamTurnoverPercentage', 'Team1_TeamAssistPercentage', 'Team1_TeamEffectiveFGPercentage',
+            'Team1_TeamFreeThrowRate', 'Team1_GamesPlayed', 'Team1_AvgRank', 'Team1_Seed',
+            'Team2_WinPercentage', 'Team2_PointsPerGame', 'Team2_OpponentPointsPerGame', 'Team2_PointsDifferential',
+            'Team2_PointsRatio', 'Team2_TeamFGPercentage', 'Team2_Team3PPercentage', 'Team2_TeamFTPercentage',
+            'Team2_TeamOR', 'Team2_TeamDR', 'Team2_TeamTO', 'Team2_TeamAst', 'Team2_TeamStl', 'Team2_TeamBlk',
+            'Team2_TeamPF', 'Team2_TeamOffensiveReboundPercentage', 'Team2_TeamDefensiveReboundPercentage',
+            'Team2_TeamTurnoverPercentage', 'Team2_TeamAssistPercentage', 'Team2_TeamEffectiveFGPercentage',
+            'Team2_TeamFreeThrowRate', 'Team2_GamesPlayed', 'Team2_AvgRank', 'Team2_Seed',
+            'Diff_WinPercentage', 'Diff_PointsPerGame', 'Ratio_PointsPerGame', 'Diff_OpponentPointsPerGame',
+            'Ratio_OpponentPointsPerGame', 'Diff_PointsDifferential', 'Diff_PointsRatio', 'Ratio_PointsRatio',
+            'Diff_TeamFGPercentage', 'Ratio_TeamFGPercentage', 'Diff_Team3PPercentage', 'Ratio_Team3PPercentage',
+            'Diff_TeamFTPercentage', 'Ratio_TeamFTPercentage', 'Diff_TeamOR', 'Ratio_TeamOR', 'Diff_TeamDR',
+            'Ratio_TeamDR', 'Diff_TeamTO', 'Ratio_TeamTO', 'Diff_TeamAst', 'Ratio_TeamAst', 'Diff_TeamStl',
+            'Ratio_TeamStl', 'Diff_TeamBlk', 'Ratio_TeamBlk', 'Diff_TeamPF', 'Ratio_TeamPF',
+            'Diff_TeamOffensiveReboundPercentage', 'Ratio_TeamOffensiveReboundPercentage',
+            'Diff_TeamDefensiveReboundPercentage', 'Ratio_TeamDefensiveReboundPercentage',
+            'Diff_TeamTurnoverPercentage', 'Ratio_TeamTurnoverPercentage', 'Diff_TeamAssistPercentage',
+            'Ratio_TeamAssistPercentage', 'Diff_TeamEffectiveFGPercentage', 'Ratio_TeamEffectiveFGPercentage',
+            'Diff_TeamFreeThrowRate', 'Ratio_TeamFreeThrowRate', 'Diff_GamesPlayed', 'Ratio_GamesPlayed',
+            'Diff_AvgRank', 'Ratio_AvgRank', 'Diff_Seed', 'Ratio_Seed', 'SeedDiff', 'HigherSeed', 'Ratio_WinPercentage'
+        ]
+        
+        # Fill missing features with 0
+        for feature in expected_features:
+            if feature not in result.columns:
+                result[feature] = 0
+        
+        # Create a new DataFrame with the expected features and metadata
+        features = result[expected_features].copy()
+        features['Season'] = result['Season']
+        features['Team1ID'] = result['Team1ID']
+        features['Team2ID'] = result['Team2ID']
+        
+        # Fill NaN values with 0
+        features = features.fillna(0)
+        
+        return features
     
     def prepare_historical_training_data(self, gender: str, start_season: int, end_season: int) -> Tuple[pd.DataFrame, np.ndarray]:
         """

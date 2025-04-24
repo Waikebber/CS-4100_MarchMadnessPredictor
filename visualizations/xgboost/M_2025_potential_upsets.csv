@@ -1,0 +1,14 @@
+Season,Team1ID,Team2ID,Team1Name,Team2Name,Team1Seed,Team2Seed,Region,IsPlayIn,Team1WinProbability,Team2WinProbability,PredictedWinner,PredictedWinnerSeed,UpsetProbability,IsSeedUpset
+2025,1355,1120,Missouri,Drake,6,11,West,False,0.031266723,0.96873325,Drake,11,0.96873325,True
+2025,1276,1429,Michigan,UC San Diego,5,12,South,False,0.03586345,0.96413654,UC San Diego,12,0.96413654,True
+2025,1305,1124,Louisville,Creighton,8,9,South,False,0.061556466,0.93844354,Creighton,9,0.93844354,True
+2025,1459,1329,Wisconsin,Montana,3,14,East,False,0.19221854,0.80778146,Montana,14,0.80778146,True
+2025,1374,1326,Ole Miss,North Carolina,6,11,South,False,0.26599497,0.73400503,North Carolina,11,0.73400503,True
+2025,1342,1072,Mississippi State,Baylor,8,9,West,False,0.28446692,0.7155331,Baylor,9,0.7155331,True
+2025,1288,1094,Memphis,Colorado State,5,12,West,False,0.3314635,0.66853654,Colorado State,12,0.66853654,True
+2025,1268,1155,Maryland,Grand Canyon,4,13,South,False,0.35683352,0.6431665,Grand Canyon,13,0.6431665,True
+2025,1228,1003,Houston,Alabama State,1,16,East,False,0.37972024,0.6202798,Alabama State,16,0.6202798,True
+2025,1277,1086,Michigan State,Bryant,2,15,South,False,0.42482233,0.57517767,Bryant,15,0.57517767,True
+2025,1242,1011,Kansas,Arkansas,7,10,West,False,0.4723629,0.5276371,Arkansas,10,0.5276371,True
+2025,1085,1440,BYU,VCU,6,11,East,False,0.47870478,0.5212952,VCU,11,0.5212952,True
+2025,1328,1428,Saint Mary's,Vanderbilt,7,10,East,False,0.4913133,0.50868666,Vanderbilt,10,0.50868666,True
