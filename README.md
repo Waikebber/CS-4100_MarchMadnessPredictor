@@ -144,6 +144,57 @@ python predict_tournament.py --model_path ./trained_models/W_Ensemble_model.pkl 
 └── README.md                  # Project documentation
 ```
 
+## 📊 Results and Findings
+
+### Model Performance
+
+Our models were evaluated using multiple metrics across the 2025 NCAA Tournament:
+
+| Model | Log Loss | Accuracy | ROC AUC | Brier Score |
+|-------|----------|----------|---------|-------------|
+| Logistic Regression | 0.6080 | 0.6866 | 0.7590 | 0.2061 |
+| Random Forest | 0.5674 | 0.6791 | 0.7714 | 0.1963 |
+| XGBoost | 0.6528 | 0.7015 | 0.7835 | 0.2202 |
+| Neural Network | 0.6286 | 0.6716 | 0.7093 | 0.2195 |
+| Ensemble | 0.5590 | 0.6866 | 0.7917 | 0.1920 |
+
+
+### Key Insights
+
+1. **Model Performance**
+   - The ensemble model achieved the best overall performance with a log loss of 0.5590
+   - XGBoost showed the highest accuracy at 70.15%
+   - Random Forest demonstrated the most balanced performance across metrics
+
+2. **Prediction Strengths**
+   - Models performed exceptionally well in higher-seed matchups
+   - Successfully identified several key upsets in the 2025 tournament
+   - Demonstrated strong predictive power for Final Four teams
+
+3. **Notable Predictions**
+   - Correctly predicted several major upsets including:
+     - Drake over Missouri (85.3% / 96.9%)
+     - Grand Canyon over Maryland (73.0% / 88.6%)
+     - UNC Wilmington over Texas Tech (66.5% / 73.1%)
+   - Successfully forecasted Final Four teams: Florida, Auburn, Duke, and Houston
+
+4. **Model Characteristics**
+   - XGBoost provided more confident predictions, often skewing towards extreme probabilities
+   - Ensemble model offered more balanced predictions, better at identifying potential upsets
+   - Combined approach provided both confident predictions and risk-aware analysis
+
+### Future Improvements
+
+1. **Feature Engineering**
+   - Incorporate more advanced basketball metrics
+   - Add player-level statistics
+   - Include conference strength metrics
+
+2. **Model Enhancements**
+   - Implement tournament stage-specific ensemble techniques
+   - Add time-series components for team momentum
+   - Include team-specific adjustments (travel distance, coach experience)
+
 ## 👥 Team Members
 
 - Kai Webber: Data collection and preprocessing
