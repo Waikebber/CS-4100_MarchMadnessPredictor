@@ -1,0 +1,32 @@
+Season,Team1ID,Team2ID,Team1Name,Team2Name,Team1Seed,Team2Seed,Region,IsPlayIn,Team1WinProbability,Team2WinProbability,PredictedWinner,PredictedWinnerSeed,UpsetProbability,IsSeedUpset
+2025,1228,1003,Houston,Alabama State,1,16,East,False,0.37972024,0.6202798,Alabama State,16,0.6202798,True
+2025,1433,1457,Tennessee,Wofford,2,15,East,False,0.9808966,0.019103408,Tennessee,2,0.9808966,False
+2025,1459,1329,Wisconsin,Montana,3,14,East,False,0.19221854,0.80778146,Montana,14,0.80778146,True
+2025,1395,1330,Purdue,Mount St. Mary's,4,13,East,False,0.86824703,0.13175297,Purdue,4,0.86824703,False
+2025,1099,1307,Clemson,McNeese,5,12,East,False,0.7308329,0.26916713,Clemson,5,0.7308329,False
+2025,1085,1440,BYU,VCU,6,11,East,False,0.47870478,0.5212952,VCU,11,0.5212952,True
+2025,1328,1428,Saint Mary's,Vanderbilt,7,10,East,False,0.4913133,0.50868666,Vanderbilt,10,0.50868666,True
+2025,1156,1152,Gonzaga,Georgia,8,9,East,False,0.7611087,0.2388913,Gonzaga,8,0.7611087,False
+2025,1006,1377,Auburn,Norfolk State,1,16,West,False,0.5274562,0.47254378,Auburn,1,0.5274562,False
+2025,1437,1376,St. John's,Omaha,2,15,West,False,0.6952394,0.30476058,St. John's,2,0.6952394,False
+2025,1449,1427,Texas Tech,UNC Wilmington,3,14,West,False,0.9640415,0.03595853,Texas Tech,3,0.9640415,False
+2025,1438,1458,Texas A&M,Yale,4,13,West,False,0.6810135,0.31898648,Texas A&M,4,0.6810135,False
+2025,1288,1094,Memphis,Colorado State,5,12,West,False,0.3314635,0.66853654,Colorado State,12,0.66853654,True
+2025,1355,1120,Missouri,Drake,6,11,West,False,0.031266723,0.96873325,Drake,11,0.96873325,True
+2025,1242,1011,Kansas,Arkansas,7,10,West,False,0.4723629,0.5276371,Arkansas,10,0.5276371,True
+2025,1342,1072,Mississippi State,Baylor,8,9,West,False,0.28446692,0.7155331,Baylor,9,0.7155331,True
+2025,1181,1330,Duke,Mount St. Mary's,1,16,South,False,0.9528926,0.0471074,Duke,1,0.9528926,False
+2025,1277,1086,Michigan State,Bryant,2,15,South,False,0.42482233,0.57517767,Bryant,15,0.57517767,True
+2025,1234,1306,Iowa State,Lipscomb,3,14,South,False,0.9712342,0.028765798,Iowa State,3,0.9712342,False
+2025,1268,1155,Maryland,Grand Canyon,4,13,South,False,0.35683352,0.6431665,Grand Canyon,13,0.6431665,True
+2025,1276,1429,Michigan,UC San Diego,5,12,South,False,0.03586345,0.96413654,UC San Diego,12,0.96413654,True
+2025,1374,1326,Ole Miss,North Carolina,6,11,South,False,0.26599497,0.73400503,North Carolina,11,0.73400503,True
+2025,1287,1373,Marquette,New Mexico,7,10,South,False,0.8179275,0.18207252,Marquette,7,0.8179275,False
+2025,1305,1124,Louisville,Creighton,8,9,South,False,0.061556466,0.93844354,Creighton,9,0.93844354,True
+2025,1207,1394,Florida,Robert Morris,1,15,Midwest,False,0.75377256,0.24622744,Florida,1,0.75377256,False
+2025,1102,1426,Alabama,Troy,2,14,Midwest,False,0.7235306,0.2764694,Alabama,2,0.7235306,False
+2025,1246,1001,Kentucky,Akron,3,13,Midwest,False,0.5428572,0.45714277,Kentucky,3,0.5428572,False
+2025,1112,1281,Arizona,Liberty,4,12,Midwest,False,0.9260458,0.073954225,Arizona,4,0.9260458,False
+2025,1393,1454,Oregon,Xavier,5,11,Midwest,False,0.8444168,0.1555832,Oregon,5,0.8444168,False
+2025,1233,1436,Illinois,Utah State,6,10,Midwest,False,0.5122634,0.48773658,Illinois,6,0.5122634,False
+2025,1425,1375,UCLA,Oklahoma,7,9,Midwest,False,0.97407115,0.025928855,UCLA,7,0.97407115,False

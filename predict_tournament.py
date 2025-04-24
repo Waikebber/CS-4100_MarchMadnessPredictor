@@ -256,6 +256,198 @@ def simulate_bracket(
     
     return predictions
 
+def predict_2025_tournament(
+    model_path: str,
+    gender: str = 'M',
+    output_dir: str = './predictions',
+    visualize: bool = True
+):
+    """
+    Generate predictions for the 2025 tournament.
+    
+    Args:
+        model_path: Path to the trained model file
+        gender: 'M' for men's data, 'W' for women's data
+        output_dir: Directory to save predictions
+        visualize: Whether to create visualizations
+    """
+    print(f"Generating predictions for {gender}'s 2025 tournament using model: {model_path}")
+    
+    # Create output directory if it doesn't exist
+    os.makedirs(output_dir, exist_ok=True)
+    
+    # Load the model
+    model = load_model(model_path)
+    print(f"Loaded model: {model.name}")
+    
+    # Load data
+    print("Loading data...")
+    loader = DataLoader()
+    
+    # Create feature engineer
+    print("Creating features...")
+    engineer = FeatureEngineer(loader)
+    
+    # Load 2025 tournament seeds
+    seeds_2025 = pd.read_csv('data/MNCAATourneySeeds_2025.csv')
+    
+    # Create matchups based on the bracket structure
+    matchups = []
+    regions = seeds_2025['Region'].unique()
+    
+    for region in regions:
+        region_seeds = seeds_2025[seeds_2025['Region'] == region].sort_values('Seed')
+        
+        # First round matchups (1 vs 16, 2 vs 15, etc.)
+        # Handle play-in games first
+        play_in_teams = region_seeds[region_seeds['Seed'].duplicated(keep=False)]
+        if not play_in_teams.empty:
+            play_in_seeds = play_in_teams['Seed'].unique()
+            for seed in play_in_seeds:
+                teams = play_in_teams[play_in_teams['Seed'] == seed]
+                if len(teams) == 2:
+                    team1 = teams.iloc[0]
+                    team2 = teams.iloc[1]
+                    matchups.append({
+                        'Season': 2025,
+                        'Team1ID': team1['TeamID'],
+                        'Team2ID': team2['TeamID'],
+                        'Team1Name': team1['TeamName'],
+                        'Team2Name': team2['TeamName'],
+                        'Team1Seed': team1['Seed'],
+                        'Team2Seed': team2['Seed'],
+                        'Region': region,
+                        'IsPlayIn': True
+                    })
+        
+        # Regular first round matchups
+        regular_teams = region_seeds[~region_seeds['Seed'].duplicated(keep=False)]
+        for i in range(len(regular_teams) // 2):
+            team1 = regular_teams.iloc[i]
+            team2 = regular_teams.iloc[-(i+1)]
+            matchups.append({
+                'Season': 2025,
+                'Team1ID': team1['TeamID'],
+                'Team2ID': team2['TeamID'],
+                'Team1Name': team1['TeamName'],
+                'Team2Name': team2['TeamName'],
+                'Team1Seed': team1['Seed'],
+                'Team2Seed': team2['Seed'],
+                'Region': region,
+                'IsPlayIn': False
+            })
+    
+    matchups_df = pd.DataFrame(matchups)
+    
+    # Get team stats for the season
+    team_stats = engineer._get_team_season_stats(gender, 2024)  # Use 2024 stats for 2025 predictions
+    
+    # Create matchup features
+    matchup_features = engineer._create_matchup_features(matchups_df, team_stats)
+    
+    # Drop non-feature columns before prediction
+    feature_columns = [col for col in matchup_features.columns 
+                      if col not in ['Season', 'Team1ID', 'Team2ID', 'Team1Name', 'Team2Name', 
+                                   'Team1Seed', 'Team2Seed', 'Region', 'IsPlayIn']]
+    X = matchup_features[feature_columns]
+    
+    # Handle missing values
+    X = X.fillna(0)  # Replace NaN with 0
+    
+    # Ensure features match what the model expects
+    if hasattr(model, 'features') and model.features:
+        # Use only the features the model was trained on, in the correct order
+        missing_features = set(model.features) - set(X.columns)
+        if missing_features:
+            print(f"Warning: Missing features: {missing_features}")
+            # Add missing features with default value of 0
+            for feature in missing_features:
+                X[feature] = 0
+        
+        # Reorder columns to match what the model expects
+        X = X[model.features]
+    
+    # Generate predictions
+    print("Generating predictions...")
+    probabilities = model.predict_proba(X)
+    
+    # Create prediction DataFrame
+    predictions = matchups_df.copy()
+    predictions['Team1WinProbability'] = probabilities
+    predictions['Team2WinProbability'] = 1 - probabilities
+    predictions['PredictedWinner'] = predictions['Team1Name'].where(
+        predictions['Team1WinProbability'] >= 0.5, 
+        predictions['Team2Name']
+    )
+    predictions['PredictedWinnerSeed'] = predictions['Team1Seed'].where(
+        predictions['Team1WinProbability'] >= 0.5, 
+        predictions['Team2Seed']
+    )
+    predictions['UpsetProbability'] = np.where(
+        predictions['Team1WinProbability'] < 0.5,
+        predictions['Team2WinProbability'],
+        predictions['Team1WinProbability']
+    )
+    
+    # Define upsets (lower seed beating higher seed)
+    predictions['IsSeedUpset'] = (
+        (predictions['Team1WinProbability'] >= 0.5) & (predictions['Team1Seed'] > predictions['Team2Seed']) |
+        (predictions['Team1WinProbability'] < 0.5) & (predictions['Team1Seed'] < predictions['Team2Seed'])
+    )
+    
+    # Save predictions
+    output_file = os.path.join(output_dir, f"{gender}_2025_first_round_predictions.csv")
+    predictions.to_csv(output_file, index=False)
+    print(f"Saved predictions to {output_file}")
+    
+    # Output upset analysis
+    upsets = predictions[predictions['IsSeedUpset']].sort_values('UpsetProbability', ascending=False)
+    upsets_file = os.path.join(output_dir, f"{gender}_2025_potential_upsets.csv")
+    upsets.to_csv(upsets_file, index=False)
+    print(f"Saved potential upsets to {upsets_file}")
+    
+    if not upsets.empty:
+        print("\nTop 5 most likely upsets:")
+        for _, row in upsets.head(5).iterrows():
+            team1 = f"{row['Team1Name']} (Seed {int(row['Team1Seed'])})"
+            team2 = f"{row['Team2Name']} (Seed {int(row['Team2Seed'])})"
+            winner = team1 if row['Team1WinProbability'] >= 0.5 else team2
+            prob = max(row['Team1WinProbability'], row['Team2WinProbability'])
+            print(f"{team1} vs {team2}: {winner} wins with {prob:.1%} probability")
+    
+    # Create visualizations if requested
+    if visualize:
+        print("Creating visualizations...")
+        
+        # Set up the visualization directory
+        viz_dir = os.path.join(output_dir, 'visualizations')
+        os.makedirs(viz_dir, exist_ok=True)
+        
+        # Plot win probability distribution
+        plt.figure(figsize=(10, 6))
+        sns.histplot(predictions['Team1WinProbability'], bins=20, kde=True)
+        plt.axvline(0.5, color='red', linestyle='--')
+        plt.title(f"{gender}'s 2025 Tournament Win Probability Distribution")
+        plt.xlabel('Win Probability')
+        plt.ylabel('Count')
+        plt.savefig(os.path.join(viz_dir, f"{gender}_2025_win_probability_dist.png"))
+        
+        # Plot upset probabilities
+        if predictions['IsSeedUpset'].any():
+            upset_probs = upsets['UpsetProbability'].head(10)
+            upset_labels = [f"{row['Team1Name']} vs {row['Team2Name']}" for _, row in upsets.head(10).iterrows()]
+            
+            plt.figure(figsize=(12, 8))
+            bars = plt.barh(range(len(upset_probs)), upset_probs, color='salmon')
+            plt.yticks(range(len(upset_probs)), upset_labels)
+            plt.title(f"Top 10 Most Likely Upsets ({gender}'s 2025 Tournament)")
+            plt.xlabel('Upset Probability')
+            plt.tight_layout()
+            plt.savefig(os.path.join(viz_dir, f"{gender}_2025_upset_probabilities.png"))
+    
+    print(f"Prediction complete. Results saved to {output_dir}")
+    return predictions
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Generate March Madness tournament predictions")
     parser.add_argument("--model_path", type=str, required=True, help="Path to the trained model file")
